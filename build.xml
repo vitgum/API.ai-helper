@@ -1,0 +1,69 @@
+<project name="sads-apiai-bot" default="distr" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <property name="app.name"        value="sads-apiai-bot"/>
+
+  <property name="src.dir"         value="src"/>
+  <property name="lib.dir"         value="lib"/>
+  <property name="libdev.dir"      value="libdev"/>
+  <property name="web.dir"         value="web"/>
+
+  <property name="build.dir"       value=".build"/>
+  <property name="distr.dir"       value="${build.dir}/distr"/>
+  <property name="classes.dir"     value="${build.dir}/classes"/>
+
+  <property name="release.version" value="dev"/>
+
+  <path id="classpath">
+    <fileset dir="${lib.dir}" includes="*.jar"/>
+    <fileset dir="${libdev.dir}" includes="*.jar"/>
+  </path>
+
+  <tstamp>
+    <format property="build.date" pattern="yyyy-MM-dd HH:mm:ss" />
+  </tstamp>
+
+  <target name="resolve" description="resolve and retrieve dependencies with ivy">
+    <ivy:settings file="${user.home}/.ivy2/ivysettings.xml"/>
+    <ivy:resolve transitive="false"/>
+
+    <delete dir="${lib.dir}" failonerror="false"/>
+    <mkdir dir="${lib.dir}"/>
+    <delete dir="${libdev.dir}" failonerror="false"/>
+    <mkdir dir="${libdev.dir}"/>
+
+    <ivy:retrieve type="jar,bundle" pattern="${lib.dir}/[artifact]-[revision].[ext]" conf="prod" haltonfailure="true"/>
+    <ivy:retrieve type="jar,bundle" pattern="${libdev.dir}/[artifact]-[revision].[ext]" conf="dev" haltonfailure="true"/>
+  </target>
+
+  <target name="compile" description="compile sources" depends="resolve">
+    <delete dir="${classes.dir}" failonerror="false"/>
+    <mkdir dir="${classes.dir}"/>
+
+    <javac destdir="${classes.dir}" source="1.8" target="1.8" debug="on" encoding="UTF-8" includeantruntime="false">
+      <src path="${src.dir}"/>
+      <classpath refid="classpath"/>
+    </javac>
+
+    <copy todir="${classes.dir}">
+      <fileset dir="${src.dir}" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+  <target name="distr" description="build web-app" depends="compile">
+    <delete file="${distr.dir}/${app.name}.war" failonerror="false"/>
+    <mkdir dir="${distr.dir}"/>
+
+    <war destfile="${distr.dir}/${app.name}.war">
+      <manifest>
+        <attribute name="Plugin" value="${app.name}"/>
+        <attribute name="Vendor" value="Eyeline Communications"/>
+        <attribute name="Release-Version" value="${release.version}"/>
+        <attribute name="Build-Date" value="${build.date}"/>
+      </manifest>
+      <classes dir="${classes.dir}"/>
+      <lib dir="${lib.dir}"/>
+      <fileset dir="${web.dir}"/>
+    </war>
+  </target>
+
+</project>

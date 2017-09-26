@@ -1,0 +1,48 @@
+<ivy-module version="2.0">
+
+  <info organisation="mobi.eyeline.mobilizer" module="sads-apiai-bot"/>
+
+  <configurations>
+    <conf name="prod" description="for prod"/>
+    <conf name="dev"  description="for dev"/>
+  </configurations>
+
+  <dependencies>
+    <!-- Utils -->
+    <dependency org="mobi.eyeline.util.extutils" name="generalutils" rev="1.38.0" conf="prod->prod"/>
+    <dependency org="mobi.eyeline.mobilizer" name="sads-utils" rev="[0.37,)" changing="true" conf="prod->default"/>
+    <dependency org="commons-httpclient" name="commons-httpclient" rev="3.1" conf="prod->default"/>
+    <dependency org="commons-logging" name="commons-logging" rev="1.1.1" conf="prod->default"/>
+    <dependency org="commons-codec" name="commons-codec" rev="1.2" conf="prod->default"/>
+    <dependency org="commons-io" name="commons-io" rev="1.4" conf="prod->default"/>
+    <dependency org="commons-lang" name="commons-lang" rev="2.3" conf="prod->default"/>
+
+    <!-- Log4j -->
+    <dependency org="log4j" name="log4j" rev="1.2.16" conf="prod->default">
+      <exclude org="org.apache.geronimo.specs"/>
+    </dependency>
+
+    <!-- CDI 1.1 -->
+    <dependency org="javax.inject" name="javax.inject" rev="1" conf="prod->default"/>
+    <dependency org="javax.enterprise" name="cdi-api" rev="1.1" conf="prod->default"/>
+    <dependency org="javax.interceptor" name="javax.interceptor-api" rev="1.2" conf="prod->default"/>
+
+    <!-- Weld 2.1 (CDI 1.1 impl) -->
+    <dependency org="org.jboss.weld" name="weld-api" rev="2.1.Final" conf="prod->default"/>
+    <dependency org="org.jboss.weld" name="weld-spi" rev="2.1.Final" conf="prod->default"/>
+    <dependency org="org.jboss.weld" name="weld-core-impl" rev="2.1.2.Final" conf="prod->default"/>
+    <dependency org="org.jboss.weld.servlet" name="weld-servlet-core" rev="2.1.2.Final" conf="prod->default"/>
+    <dependency org="org.jboss.logging" name="jboss-logging" rev="3.1.3.GA" conf="prod->default"/>
+    <dependency org="org.jboss.classfilewriter" name="jboss-classfilewriter" rev="1.0.4.Final" conf="prod->default"/>
+    <dependency org="com.google.guava" name="guava" rev="13.0.1" conf="prod->default"/>
+
+    <!-- Servlet API -->
+    <dependency org="javax.servlet" name="javax.servlet-api" rev="3.1.0" conf="dev->default"/>
+
+    <!-- Jackson -->
+    <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="2.7.2" conf="prod->default"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="2.7.2" conf="prod->default"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="2.7.2" conf="prod->default"/>
+  </dependencies>
+
+</ivy-module>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+
+  <section name="api.ai.bot">
+    <param name="push.url" type="string">https://api.miniapps.run/push</param>
+    <param name="bot.ask.command.name" type="string">ask</param>
+
+    <param name="api.ai.client.access.token" type="string">API_AI_TOKEN</param>
+  </section>
+
+</config>
