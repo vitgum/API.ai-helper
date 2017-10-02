@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class AiApi {
 
-  private final static String LANG = "RU";
+  private final static String LANG = "EN";
   private final static String API_URL = "https://api.api.ai/v1/";
 
   private Loader<Loader.Entity> loader;
