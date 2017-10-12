@@ -21,10 +21,7 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -80,10 +77,10 @@ public class ApiAiBotServlet extends HttpServlet {
         return;
       }
 
-      boolean isStatRequest = isStatRequest(request);
+      boolean forAdmin = WebContext.getAdminsUserIds().contains(userId);
+      boolean isStatRequest = isStatRequest(request, forAdmin);
 
       if(isStatRequest) {
-        boolean forAdmin = WebContext.getAdminsUserIds().contains(userId);
         String statPage = createStatPage(forAdmin, statService);
         sendResponse(response, statPage, userId);
         return;
@@ -212,7 +209,7 @@ public class ApiAiBotServlet extends HttpServlet {
   private static String createStatPageText(boolean forAdmin, Map<Long, EventStatData> stat) {
     StringBuilder sb = new StringBuilder();
 
-    SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy");
+    SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.ENGLISH);
     int totalRecognizedCount = 0;
     int totalUnrecognizedCount = 0;
 
@@ -261,7 +258,7 @@ public class ApiAiBotServlet extends HttpServlet {
     return "<page version=\"2.0\" attributes=\"telegram.reply: " + reply + ";\"><div>" + text + "</div></page>";
   }
 
-  private static boolean isStatRequest(HttpServletRequest request) {
+  private static boolean isStatRequest(HttpServletRequest request, boolean forAdmin) {
     boolean result = false;
 
     String text = request.getParameter("event.text");
@@ -270,7 +267,7 @@ public class ApiAiBotServlet extends HttpServlet {
       result = true;
 
     if(log.isDebugEnabled())
-      log.debug("isStatRequest(): " + result);
+      log.debug("isStatRequest(): " + result + ". For admin: " + forAdmin);
 
     return result;
   }
