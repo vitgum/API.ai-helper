@@ -2,6 +2,10 @@
 <config>
 
   <section name="api.ai.bot">
+    <param name="admins.user.ids">f1d477d7-ff82-4107-b712-3d9044a82b28</param>
+
+    <param name="dump.stat.file">/export/home/artem/SERVICES/GLOBALUSSD/plugins/.stat/sads-apiai-bot/total-stat.csv</param>
+
     <param name="push.url" type="string">https://api.miniapps.run/push</param>
     <param name="bot.ask.command.name" type="string">ask</param>
 

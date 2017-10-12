@@ -3,11 +3,15 @@ package com.eyelinecom.whoisd.sads2.apiai.bot.web.servlets;
 import com.eyelinecom.whoisd.sads2.apiai.bot.services.apiai.AiApi;
 import com.eyelinecom.whoisd.sads2.apiai.bot.services.apiai.model.Fulfillment;
 import com.eyelinecom.whoisd.sads2.apiai.bot.services.apiai.model.Result;
+import com.eyelinecom.whoisd.sads2.apiai.bot.services.stat.EventStatService;
+import com.eyelinecom.whoisd.sads2.apiai.bot.services.stat.EventType;
 import com.eyelinecom.whoisd.sads2.common.HttpDataLoader;
 import com.eyelinecom.whoisd.sads2.apiai.bot.WebContext;
 import com.eyelinecom.whoisd.sads2.apiai.bot.services.apiai.model.Response;
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.log4j.Logger;
 
+import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -16,6 +20,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,18 +47,21 @@ public class ApiAiBotServlet extends HttpServlet {
   private final static String PAGE_EMPTY = "<page version=\"2.0\"></page>";
   private final static String PAGE_PROTOCOL_NOT_SUPPORTED = "<page version=\"2.0\"><div>Sorry, your messenger is not supported.</div></page>";
 
+  @Inject
+  private EventStatService statService;
+
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    handleRequest(request, response);
+    handleRequest(request, response, statService);
   }
 
   @Override
   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    handleRequest(request, response);
+    handleRequest(request, response, statService);
   }
 
-  private static void handleRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+  private static void handleRequest(HttpServletRequest request, HttpServletResponse response, EventStatService statService) throws ServletException, IOException {
     String userId = getUserId(request);
     String protocol = request.getParameter("protocol");
     String eventId = request.getParameter("event.id");
@@ -68,6 +80,15 @@ public class ApiAiBotServlet extends HttpServlet {
         return;
       }
 
+      boolean isStatRequest = isStatRequest(request);
+
+      if(isStatRequest) {
+        boolean forAdmin = WebContext.getAdminsUserIds().contains(userId);
+        String statPage = createStatPage(forAdmin, statService);
+        sendResponse(response, statPage, userId);
+        return;
+      }
+
       String question = getQuestion(request, WebContext.getBotAskCommandName(), userId);
 
       if(question == null || question.isEmpty()) {
@@ -80,6 +101,8 @@ public class ApiAiBotServlet extends HttpServlet {
 
       if(log.isInfoEnabled())
         log.info("Question [" + userId + "]: \"" + question + "\"");
+
+      statService.registerEvent(EventType.QUESTION_RECEIVED);
 
       AiApi api = new AiApi(new HttpDataLoader(), WebContext.getApiAiClientAccessToken());
       Response aiResponse = api.query(userId, question);
@@ -105,7 +128,7 @@ public class ApiAiBotServlet extends HttpServlet {
       }
 
       lang = determineLanguage(question);
-      processAnswer(response, answer, lang, service, userId, eventId, protocol);
+      processAnswer(response, answer, lang, service, userId, eventId, protocol, statService);
     }
     catch(Exception e) {
       log.error("Error [" + userId + "]: " + e.getMessage(), e);
@@ -129,7 +152,7 @@ public class ApiAiBotServlet extends HttpServlet {
     }
   }
 
-  private static void processAnswer(HttpServletResponse response, String answer, Lang lang, String service, String userId, String eventId, String protocol) throws IOException {
+  private static void processAnswer(HttpServletResponse response, String answer, Lang lang, String service, String userId, String eventId, String protocol, EventStatService statService) throws IOException {
     if(log.isInfoEnabled())
       log.info("Answer [" + userId + "]: \"" + answer + "\"");
 
@@ -137,11 +160,13 @@ public class ApiAiBotServlet extends HttpServlet {
       String notFoundAnswerPage = createReplyPage(getNotFoundAnswerText(lang));
       sendResponse(response, notFoundAnswerPage, userId);
       sendForward(service, userId, eventId, protocol);
+      statService.registerEvent(EventType.QUESTION_UNRECOGNIZED);
       return;
     }
 
     String answerPage = createReplyPage(answer);
     sendResponse(response, answerPage, userId);
+    statService.registerEvent(EventType.QUESTION_RECOGNIZED);
   }
 
   private static String getNotFoundAnswerText(Lang lang) {
@@ -164,8 +189,90 @@ public class ApiAiBotServlet extends HttpServlet {
     }
   }
 
+  private static String createStatPage(boolean forAdmin, EventStatService statService) {
+    Date today = new Date();
+    Date from = DateUtils.round(DateUtils.addHours(DateUtils.addDays(today, -10), -12), Calendar.DAY_OF_MONTH);
+    Date till = DateUtils.round(DateUtils.addHours(today, -12), Calendar.DAY_OF_MONTH);
+
+    Map<Long, EventStatData> stat = new LinkedHashMap<>();
+
+    do {
+      stat.put(from.getTime(), new EventStatData(
+          statService.getNumberOfEventsForDay(EventType.QUESTION_RECOGNIZED, from),
+          statService.getNumberOfEventsForDay(EventType.QUESTION_UNRECOGNIZED, from)
+      ));
+    }
+    while((from = DateUtils.addDays(from, 1)).before(till));
+
+    String statPageText = createStatPageText(forAdmin, stat);
+
+    return createPage(statPageText, false);
+  }
+
+  private static String createStatPageText(boolean forAdmin, Map<Long, EventStatData> stat) {
+    StringBuilder sb = new StringBuilder();
+
+    SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy");
+    int totalRecognizedCount = 0;
+    int totalUnrecognizedCount = 0;
+
+    for(Map.Entry<Long, EventStatData> e : stat.entrySet()) {
+      long time = e.getKey();
+      EventStatData data = e.getValue();
+
+      addStatBlock(sb, sdf.format(new Date(time)), forAdmin, data.getRecognizedCount(), data.getUnrecognizedCount(), data.getRecognizedPercent(), data.getUnrecognizedPercent());
+
+      totalRecognizedCount += data.getRecognizedCount();
+      totalUnrecognizedCount += data.getUnrecognizedCount();
+    }
+
+    int totalCount = totalRecognizedCount + totalUnrecognizedCount;
+    int totalRecognizedPercent = Math.round(100 * totalRecognizedCount / totalCount);
+    int totalUnrecognizedPercent = 100 - totalRecognizedPercent;
+
+    addStatBlock(sb, "Total for the past 10 days", forAdmin, totalRecognizedCount, totalUnrecognizedCount, totalRecognizedPercent, totalUnrecognizedPercent);
+
+    return sb.toString();
+  }
+
+  private static void addStatBlock(StringBuilder sb, String header, boolean forAdmin, int recognizedCount, int unrecognizedCount, int recognizedPercent, int unrecognizedPercent) {
+    sb.append("<b>").append(header).append(":</b>");
+    sb.append("<br/>");
+
+    sb.append("- ");
+    sb.append(forAdmin ? recognizedCount : recognizedPercent);
+    sb.append(forAdmin ? "" : "% of");
+    sb.append(" questions are recognized successfully");
+    sb.append("<br/>");
+
+    sb.append("- ");
+    sb.append(forAdmin ? unrecognizedCount : unrecognizedPercent);
+    sb.append(forAdmin ? "" : "% of");
+    sb.append(" questions are forwarded to operators");
+    sb.append("<br/>");
+    sb.append("<br/>");
+  }
+
   private static String createReplyPage(String text) {
-    return "<page version=\"2.0\" attributes=\"telegram.reply: true;\"><div>" + text + "</div></page>";
+    return createPage(text, true);
+  }
+
+  private static String createPage(String text, boolean reply) {
+    return "<page version=\"2.0\" attributes=\"telegram.reply: " + reply + ";\"><div>" + text + "</div></page>";
+  }
+
+  private static boolean isStatRequest(HttpServletRequest request) {
+    boolean result = false;
+
+    String text = request.getParameter("event.text");
+
+    if(text != null && text.trim().equals("/stat"))
+      result = true;
+
+    if(log.isDebugEnabled())
+      log.debug("isStatRequest(): " + result);
+
+    return result;
   }
 
   private static String getQuestion(HttpServletRequest request, String botAskCommandName, String userId) {
