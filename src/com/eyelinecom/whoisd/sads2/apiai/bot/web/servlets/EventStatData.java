@@ -15,6 +15,10 @@ class EventStatData {
     this.unrecognizedCount = unrecognizedCount;
   }
 
+  int getTotalCount() {
+    return recognizedCount + unrecognizedCount;
+  }
+
   int getRecognizedCount() {
     return recognizedCount;
   }
@@ -24,11 +28,20 @@ class EventStatData {
   }
 
   int getRecognizedPercent() {
-    int total = recognizedCount + unrecognizedCount;
-    return Math.round(100 * recognizedCount / total);
+    int totalCount = getTotalCount();
+
+    if(totalCount == 0)
+      return 0;
+
+    return Math.round(100 * recognizedCount / totalCount);
   }
 
   int getUnrecognizedPercent() {
+    int totalCount = getTotalCount();
+
+    if(totalCount == 0)
+      return 0;
+
     return 100 - getRecognizedPercent();
   }
 

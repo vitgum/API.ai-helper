@@ -227,8 +227,8 @@ public class ApiAiBotServlet extends HttpServlet {
     }
 
     int totalCount = totalRecognizedCount + totalUnrecognizedCount;
-    int totalRecognizedPercent = Math.round(100 * totalRecognizedCount / totalCount);
-    int totalUnrecognizedPercent = 100 - totalRecognizedPercent;
+    int totalRecognizedPercent = totalCount == 0 ? 0 : Math.round(100 * totalRecognizedCount / totalCount);
+    int totalUnrecognizedPercent = totalCount == 0 ? 0 : 100 - totalRecognizedPercent;
 
     addStatBlock(sb, "Total for the past 10 days", forAdmin, totalRecognizedCount, totalUnrecognizedCount, totalRecognizedPercent, totalUnrecognizedPercent);
 
