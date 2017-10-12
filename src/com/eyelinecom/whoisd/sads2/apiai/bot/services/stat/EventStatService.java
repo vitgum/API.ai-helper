@@ -150,8 +150,8 @@ public class EventStatService {
 
       synchronized(eventStat) {
         if(eventStat.isEmpty()) {
-          if(log.isDebugEnabled())
-            log.debug("There is nothing to dump.");
+          if(log.isInfoEnabled())
+            log.info("There is nothing to dump.");
 
           return;
         }
