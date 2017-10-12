@@ -61,6 +61,7 @@ public class EventStatService {
             EventType type = EventType.valueOf(v[1]);
 
             eventStat.put(time, type);
+            lastDumpedEventTime = time;
           }
           catch(IllegalArgumentException e) {
             log.error("Can't parse stat line: " + line);
