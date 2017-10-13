@@ -33,7 +33,8 @@ public class ApiAiBotServlet extends HttpServlet {
 
   private final static Logger log = Logger.getLogger("API_AI_BOT_SERVLET");
 
-  private final static Pattern RU_LANG_PATTERN = Pattern.compile("[А-яЁё]+");
+  private final static Pattern PATTERN_RU_LANG = Pattern.compile("[А-яЁё]+");
+  private final static Pattern PATTERN_AMP = Pattern.compile("(&)");
 
   private final static String BOT_ERROR_TEXT_EN = "Sorry, I'm very busy right now. Please try again later.";
   private final static String BOT_ERROR_TEXT_RU = "Извините, я сейчас очень занят. Спросите меня чуть позже.";
@@ -255,7 +256,7 @@ public class ApiAiBotServlet extends HttpServlet {
   }
 
   private static String createPage(String text, boolean reply) {
-    return "<page version=\"2.0\" attributes=\"telegram.reply: " + reply + ";\"><div>" + text + "</div></page>";
+    return "<page version=\"2.0\" attributes=\"telegram.reply: " + reply + ";\"><div>" + escape(text) + "</div></page>";
   }
 
   private static boolean isStatRequest(HttpServletRequest request, boolean forAdmin) {
@@ -290,7 +291,7 @@ public class ApiAiBotServlet extends HttpServlet {
   }
 
   private static Lang determineLanguage(String question) {
-    Matcher m = RU_LANG_PATTERN.matcher(question);
+    Matcher m = PATTERN_RU_LANG.matcher(question);
     return m.find() ? Lang.RU : Lang.EN;
   }
 
@@ -301,6 +302,10 @@ public class ApiAiBotServlet extends HttpServlet {
       userId = request.getParameter("subscriber");
 
     return userId;
+  }
+
+  private static String escape(String text) {
+    return PATTERN_AMP.matcher(text).replaceAll("&amp;");
   }
 
   private static void logRequest(HttpServletRequest request, String userId) {

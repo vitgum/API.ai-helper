@@ -75,7 +75,7 @@ public class EventStatService {
     }
 
     if(log.isInfoEnabled())
-      log.info("Finished init EventStatService. Records size: " + eventStat.size());
+      log.info("Finished init EventStatService. Loaded records: " + eventStat.size());
   }
 
   public void registerEvent(EventType eventType) {
