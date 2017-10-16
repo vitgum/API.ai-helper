@@ -33,6 +33,8 @@ public class ApiAiBotServlet extends HttpServlet {
 
   private final static Logger log = Logger.getLogger("API_AI_BOT_SERVLET");
 
+  private final static String INVALID_QUESTION_FORMAT = "INVALID_QUESTION_FORMAT";
+
   private final static Pattern PATTERN_RU_LANG = Pattern.compile("[А-яЁё]+");
   private final static Pattern PATTERN_AMP = Pattern.compile("(&)");
 
@@ -44,6 +46,16 @@ public class ApiAiBotServlet extends HttpServlet {
 
   private final static String PAGE_EMPTY = "<page version=\"2.0\"></page>";
   private final static String PAGE_PROTOCOL_NOT_SUPPORTED = "<page version=\"2.0\"><div>Sorry, your messenger is not supported.</div></page>";
+
+  private final static String PAGE_MANUAL = "<page version=\"2.0\">" +
+      "<div>" +
+      "Hello!<br/>" +
+      "You can ask me questions by typing <b>/ask \"your question\"</b> or just <b>ask \"your question\"</b>.<br/>" +
+      "For example:<br/>" +
+      "/ask what is MAT?<br/>" +
+      "ask what is MAT?" +
+      "</div>" +
+      "</page>";
 
   @Inject
   private EventStatService statService;
@@ -64,7 +76,12 @@ public class ApiAiBotServlet extends HttpServlet {
     String protocol = request.getParameter("protocol");
     String eventId = request.getParameter("event.id");
     String service = request.getParameter("service");
+    boolean forAdmin = WebContext.getAdminsUserIds().contains(userId);
+    String eventText = request.getParameter("event.text");
     Lang lang = null;
+
+    if(eventText != null)
+      eventText = eventText.trim();
 
     if(log.isDebugEnabled())
       logRequest(request, userId);
@@ -78,8 +95,7 @@ public class ApiAiBotServlet extends HttpServlet {
         return;
       }
 
-      boolean forAdmin = WebContext.getAdminsUserIds().contains(userId);
-      boolean isStatRequest = isStatRequest(request, forAdmin);
+      boolean isStatRequest = isStatRequest(eventText, forAdmin);
 
       if(isStatRequest) {
         String statPage = createStatPage(forAdmin, statService);
@@ -87,13 +103,21 @@ public class ApiAiBotServlet extends HttpServlet {
         return;
       }
 
-      String question = getQuestion(request, WebContext.getBotAskCommandName(), userId);
+      String question = getQuestion(eventText, WebContext.getBotAskCommandName(), userId);
 
       if(question == null || question.isEmpty()) {
         if(log.isDebugEnabled())
           log.debug("No question, return empty page [" + userId + "].");
 
         sendResponse(response, PAGE_EMPTY, userId);
+        return;
+      }
+
+      if(question.equals(INVALID_QUESTION_FORMAT)) {
+        if(log.isDebugEnabled())
+          log.debug("Invalid question format [" + userId + "]: " + eventText);
+
+        sendResponse(response, PAGE_MANUAL, userId);
         return;
       }
 
@@ -259,12 +283,10 @@ public class ApiAiBotServlet extends HttpServlet {
     return "<page version=\"2.0\" attributes=\"telegram.reply: " + reply + ";\"><div>" + escape(text) + "</div></page>";
   }
 
-  private static boolean isStatRequest(HttpServletRequest request, boolean forAdmin) {
+  private static boolean isStatRequest(String text, boolean forAdmin) {
     boolean result = false;
 
-    String text = request.getParameter("event.text");
-
-    if(text != null && text.trim().equals("/stat"))
+    if(text != null && text.equals("/stat"))
       result = true;
 
     if(log.isDebugEnabled())
@@ -273,21 +295,34 @@ public class ApiAiBotServlet extends HttpServlet {
     return result;
   }
 
-  private static String getQuestion(HttpServletRequest request, String botAskCommandName, String userId) {
-    String question = request.getParameter("event.text");
-
+  private static String getQuestion(String text, String botAskCommandName, String userId) {
     if(log.isDebugEnabled())
-      log.debug("Got question [" + userId + "]: \"" + question + "\"");
+      log.debug("Got question [" + userId + "]: \"" + text + "\"");
 
-    if(question == null || question.isEmpty())
+    if(text == null || text.isEmpty())
       return null;
+
+    if(text.startsWith(botAskCommandName))
+      return parseQuestion(text, botAskCommandName);
 
     String botAskCommand = "/" + botAskCommandName;
 
-    if(!question.startsWith(botAskCommand))
-      return null;
+    if(text.startsWith(botAskCommand))
+      return parseQuestion(text, botAskCommand);
 
-    return question.substring(botAskCommand.length()).trim();
+    return null;
+  }
+
+  private static String parseQuestion(String text, String command) {
+    if(text.length() > command.length()) {
+      int ch = text.charAt(command.length());
+      if(ch == ' ') {
+        text = text.substring(command.length() + 1).trim();
+        if(!text.isEmpty())
+          return text;
+      }
+    }
+    return INVALID_QUESTION_FORMAT;
   }
 
   private static Lang determineLanguage(String question) {
