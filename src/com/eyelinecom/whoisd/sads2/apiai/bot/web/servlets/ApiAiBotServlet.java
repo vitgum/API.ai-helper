@@ -194,7 +194,7 @@ public class ApiAiBotServlet extends HttpServlet {
   private static String getNotFoundAnswerText(Lang lang) {
     switch(lang) {
       case RU:
-        return NOT_FOUND_ANSWER_TEXT_RU;
+//        return NOT_FOUND_ANSWER_TEXT_RU;
       case EN:
       default:
         return NOT_FOUND_ANSWER_TEXT_EN;
@@ -204,7 +204,7 @@ public class ApiAiBotServlet extends HttpServlet {
   private static String getBotErrorText(Lang lang) {
     switch(lang) {
       case RU:
-        return BOT_ERROR_TEXT_RU;
+//        return BOT_ERROR_TEXT_RU;
       case EN:
       default:
         return BOT_ERROR_TEXT_EN;
