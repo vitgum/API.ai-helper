@@ -49,11 +49,9 @@ public class ApiAiBotServlet extends HttpServlet {
 
   private final static String PAGE_MANUAL = "<page version=\"2.0\">" +
       "<div>" +
-      "Hello!<br/>" +
-      "You can ask me questions by typing <b>/ask \"your question\"</b> or just <b>ask \"your question\"</b>.<br/>" +
-      "For example:<br/>" +
-      "/ask what is MAT?<br/>" +
-      "ask what is MAT?" +
+      "Hello! I am MiniApps.pro bot. You can ask me about ICO by using 'ask question' syntax. For example:<br/>" +
+      "ask miniapps<br/>" +
+      "ask what is MAT" +
       "</div>" +
       "</page>";
 
