@@ -176,7 +176,7 @@ public class ApiAiBotServlet extends HttpServlet {
     if(log.isInfoEnabled())
       log.info("Answer [" + userId + "]: \"" + answer + "\"");
 
-    if(answer == null) {
+    if(answer == null || answer.isEmpty()) {
       String notFoundAnswerPage = createReplyPage(getNotFoundAnswerText(lang));
       sendResponse(response, notFoundAnswerPage, userId);
       sendForward(service, userId, eventId, protocol);
@@ -302,6 +302,11 @@ public class ApiAiBotServlet extends HttpServlet {
 
     if(text.startsWith(botAskCommandName))
       return parseQuestion(text, botAskCommandName);
+
+    String _botAskCommandName = botAskCommandName.substring(0, 1).toUpperCase() + botAskCommandName.substring(1);
+
+    if(text.startsWith(_botAskCommandName))
+      return parseQuestion(text, _botAskCommandName);
 
     String botAskCommand = "/" + botAskCommandName;
 
