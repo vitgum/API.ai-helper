@@ -24,7 +24,7 @@ The plugin is called via a link that is similar to "http://plugins.miniapps.run/
 ```
 
 ## Parameters
-| Parametr      | Mandatory       | Value |
+| Parameter     | Mandatory       | Value |
 |:------------- |:---------------:|:-------------|
 | query         | Yes             |The query text to be passed to API.ai bot when a user follows the link. For example, the text "Hi!" will cause the bot to greet the user in response. Or, it can be a question that the bot is supposed to answer.|
 | back_url      | Yes             |Page address, to land the user to after talking with the bot. A return button will always be available to the user when talking with the bot.|
